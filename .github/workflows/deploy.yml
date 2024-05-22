@@ -33,14 +33,15 @@ jobs:
       - name: Logout from Docker Hub
         run: docker logout
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker pull usigmoid/cicd-github:latest
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --name myapp -p 80:80 usigmoid/cicd-github:latest
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update Kubernetes deployment
+        uses: actions-hub/kubectl@v1
+        with:
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+          command: apply -f k8s/deployment.yaml -f k8s/service.yaml
